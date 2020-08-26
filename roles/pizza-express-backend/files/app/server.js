@@ -5,9 +5,16 @@ const path = require('path');
 const bodyParser = require('body-parser');
 
 const generateId = require('./lib/generate-id');
+/*
+  The script should run in container. Container assumes to contain one process
+  Default network is bridged, and it looks better from security perspective than host network
+  To allow container communicate redis env var REDIS_HOST has been introduced.
+  You can continue using localhost instead but need to configure shared network
+  for service and redis container to let the service communicate with redis
+*/
 
 var redis = require("redis"),
-  client = redis.createClient('6379');
+  client = redis.createClient('6379', process.env.REDIS_HOST || '127.0.0.0');
 
 app.use(express.static('static'));
 app.use(bodyParser.urlencoded({ extended: true }));

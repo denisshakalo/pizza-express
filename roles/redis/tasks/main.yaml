@@ -1,0 +1,27 @@
+---
+- name: 'Pull Redis image - redis:{{ redis_service_version }}'
+  docker_image:
+    name: 'redis'
+    tag:  '{{ redis_service_version }}'
+    source: pull
+
+- name: Create a network
+  docker_network:
+    name: '{{ network }}'
+
+- name: 'Setup Redis container on {{ redis_service_port }}:6379'
+  docker_container:
+    name: '{{ redis_service_name }}'
+    image: 'redis:{{ redis_service_version }}'
+    state: started
+    published_ports:
+      - '{{ redis_service_port }}:6379'
+    networks:
+      - name: pizza
+    networks_cli_compatible: yes
+
+  register: redis_container
+
+- name: Wait until Redis is available
+  wait_for: port='{{ redis_service_port | int }}' delay=3
+  when: redis_container.changed

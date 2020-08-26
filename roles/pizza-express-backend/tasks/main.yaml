@@ -1,0 +1,98 @@
+---
+- name: Create temporary build directory
+  tempfile:
+    state: directory
+    suffix: build
+  register: build_dir_1
+  tags:
+    - image_build
+
+- name: Upload backend service sources
+  copy:
+    src: app
+    dest: '{{ build_dir_1 .path }}'
+    mode: '0755'
+  tags:
+    - image_build
+
+- name: Run unit tests
+  shell: 'docker run -v {{ build_dir_1 .path }}/app:/usr/src/app -w /usr/src/app --network {{ network }} --env REDIS_HOST={{ redis_service_name }} node:{{ node_version }} ./test/test.sh'
+  register: test_results
+  ignore_errors: yes
+  args:
+    chdir: '{{ build_dir_1 .path }}/app'
+  tags:
+    - image_build
+
+- name: Print stdout
+  debug:
+    var: test_results.stdout_lines
+  tags:
+    - image_build
+
+- name: Print stderr
+  debug:
+    var: test_results.stderr_lines
+  when: '"ERR!" in test_results.stderr or test_results.rc != 0'
+  tags:
+    - image_build
+    
+- name: Fail on test error
+  fail:
+    msg: "NPM tests failed"
+  when: '"ERR!" in test_results.stderr or test_results.rc != 0'
+  tags:
+    - image_build
+
+- name: Create a docker image
+  docker_image:
+    name: '{{ app_image_name }}'
+    tag: latest
+    push: no
+    build:
+      path: '{{ build_dir_1 .path }}/app'
+  tags:
+    - image_build
+
+- name: Use the registered var and the file module to remove the temporary dir
+  file:
+    path: '{{ build_dir_1 .path }}'
+    state: absent
+  when: build_dir_1.path is defined
+  tags:
+    - image_build
+
+- name: 'Setup Pizza Express container'
+  docker_container:
+    name: '{{ app_name }}'
+    image: '{{ app_image_name }}:latest'
+    state: started
+    published_ports:
+      - '{{ app_port }}:3000'
+    env:
+      REDIS_HOST: '{{ redis_service_name }}'
+    networks:
+      - name: '{{ network }}'
+    networks_cli_compatible: yes
+  register: app_container
+
+- name: "Waiting for a pizza"
+  uri:
+    url: "http://127.0.0.1:{{ app_port }}"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 1
+
+- name: Tag pizza-express image and push to docker hub
+  docker_image:
+    name: '{{ app_image_name }}:latest'
+    repository: '{{ docker_hub_repo }}/{{ app_image_name }}:latest'
+    push: yes
+    source: local
+    state: present
+  register: result
+  tags:
+    - image_push
+

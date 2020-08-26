@@ -1,0 +1,21 @@
+all:
+  children:
+    pizza_express:
+      vars:
+        redis_service_name: redis
+        redis_service_version: 6.0.6
+        redis_service_port: 6379
+        node_version: 8.4.0
+        app_name: pizza-express
+        app_image_name: pizza-express
+        ansible_python_interpreter: /usr/bin/python3
+        app_port: 8081
+        network: pizza
+        docker_hub_repo: aditor
+      children:
+        pizza_express_backend:
+          hosts:
+            127.0.0.1
+        redis:
+          hosts:
+            127.0.0.1

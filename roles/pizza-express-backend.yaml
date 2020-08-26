@@ -1,0 +1,4 @@
+- hosts: pizza_express_backend
+  become: yes
+  roles:
+    - pizza-express-backend
