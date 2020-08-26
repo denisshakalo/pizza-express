@@ -17,7 +17,7 @@
     published_ports:
       - '{{ redis_service_port }}:6379'
     networks:
-      - name: pizza
+      - name: '{{ network }}'
     networks_cli_compatible: yes
 
   register: redis_container
