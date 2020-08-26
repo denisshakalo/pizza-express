@@ -40,6 +40,7 @@ The application code uses hardcoded default 127.0.0.1 to call redis.
 We can meet the code requirements using 3 ways:
 1. Run 2 process in the same container - the worst anti-pattern
 2. Run 2 containers in k8s pod - we have no k8s
-3. Use host docker networking instead of isolated user-defined bridge networking - not recommended from security perspective
+3. Use host docker networking instead of isolated user-defined bridge networking - not recommended from security perspective.
+
 So the service code has been modified to read env variable **REDIS_HOST** if provided, to connect external
 Redis container. The default behavior preserved if the variable isn't configured
