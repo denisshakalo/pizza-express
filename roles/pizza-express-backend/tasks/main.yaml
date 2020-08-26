@@ -11,7 +11,7 @@
   copy:
     src: app
     dest: '{{ build_dir_1 .path }}'
-    mode: '0755'
+    mode: '0644'
   tags:
     - image_build
 
